@@ -12,7 +12,7 @@ const io = require('socket.io')(server,{
 app.use(cors());
 
 const HOSTNAME = '127.0.0.1';
-const PORT = 3000;
+const PORT = 3005;
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -21,7 +21,7 @@ io.on("connection",(socket)=>{
     console.log("Client Connected to the Server");
 })
 
-app.get('/',(req,res)=>{
+app.get('/api',(req,res)=>{
     res.send({"Message":"Hello World"})
 })
 
