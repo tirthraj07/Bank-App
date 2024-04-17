@@ -2,9 +2,16 @@ const http = require('http');
 const express = require('express');
 const app = express();
 const server = http.createServer(app);
-const { Server } = require('socket.io')
-const io = new Server(server)
+const cors = require('cors');
+const io = require('socket.io')(server,{
+    cors:{
+        origin: "https://example.com",
+        methods: ["GET", "POST","PUT","PATCH","DELETE"],
+    }
+})
+app.use(cors());
 
+const HOSTNAME = '127.0.0.1';
 const PORT = 3000;
 
 app.use(express.urlencoded({ extended: true }));
