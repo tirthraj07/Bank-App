@@ -5,7 +5,10 @@ const { v4:uuidv4 } = require('uuid');
 const Validator = require('../methods/validator')
 const JSON_WEB_TOKEN = require('../methods/jwtValidator')
 const SupabaseDB = require('../methods/supabase')
-const { c } = require('tar');
+const Cryptography = require('../methods/cryptoAlgo')
+
+const CIPHER_KEY = "f8f1f5aac82f7d160906412074f3b8e5";
+
 auth_router.use(cookieParser());
 
 auth_router.post('/signup', async (req,res)=>{
@@ -63,7 +66,18 @@ auth_router.post('/signup', async (req,res)=>{
         return res.status(400).send({"error":"email already exists"})
     }
 
+    // Create hash for the user's password
 
+    const cryptography = new Cryptography();
+
+    const hashedPassword = cryptography.generateSaltHash(password);
+    let { privateKey, publicKey } = cryptography.generateKeyPair();
+    
+    //const salt = hashedPassword.split(':')[0];
+    
+    //const encryptedPrivateKey = cryptography.encipher(privateKey,Buffer.from(CIPHER_KEY),salt);
+
+    //const decryptedPrivateKey = cryptography.decipher(encryptedPrivateKey, Buffer.from(CIPHER_KEY), salt);
 
     const uid = uuidv4();
 
@@ -79,7 +93,8 @@ auth_router.post('/signup', async (req,res)=>{
         user: {
             id: uid,
             name: name,
-            email: email
+            username: username,
+            email: email,
         },
         userToken: userToken
     });
