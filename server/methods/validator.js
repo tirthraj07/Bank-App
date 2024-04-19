@@ -14,7 +14,7 @@ class Validator{
             return false; // Username cannot be empty
         }
         // Check for special symbols
-        const specialChars = /[!@#$%^&*(),.?":{}|<>]/;
+        const specialChars = /[!@#$%^&*(),?":{}|<>]/;
         return !specialChars.test(username);
     }
     validateEmail(email) {
@@ -34,7 +34,7 @@ class Validator{
             return false; // Password must be at least 8 characters long
         }
         // Check for special symbols, numbers, and characters
-        const containsSpecialChars = /[!@#$%^&*(),.?":{}|<>]/;
+        const containsSpecialChars = /[!@#$%^&*(),.?":{}|<>_]/;
         const containsNumbers = /\d/;
         const containsLetters = /[a-zA-Z]/;
         return containsSpecialChars.test(password) && containsNumbers.test(password) && containsLetters.test(password);
