@@ -7,9 +7,10 @@ class JSON_WEB_TOKEN{
 
     // Init payload of the jwt token
 
-    createPayload(userId,username,email){
+    createPayload(userId,name,username,email){
         return {
             userId: userId,
+            name: name,
             username: username,
             email: email
         }
