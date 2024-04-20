@@ -153,7 +153,7 @@ auth_router.post('/signup', async (req,res)=>{
     */
 
     const jsonWebToken = new JSON_WEB_TOKEN();
-    const userToken = jsonWebToken.createToken(jsonWebToken.createPayload(uid,name,username,email));
+    const userToken = jsonWebToken.createToken(jsonWebToken.createPayload(uid,name,username,email,salt));
 
     console.log(`User with uid ${uid} created`)
 
@@ -198,6 +198,99 @@ auth_router.get('/verifyUserToken',(req,res)=>{
     else{
         return res.status(400).json(validation);
     }
+
+})
+
+auth_router.post('/login',async (req,res)=>{
+    /* 
+        Fetch the user info from the body
+    */
+    const email = req.body['email'];
+    const password = req.body['password'];
+    const validator = new Validator();
+
+    console.log("New Login Request: ",email,password);
+    const logger = new Logger()
+    /* 
+        Check if the username, password, email and name are valid entries using Regex
+    */
+
+    if(!validator.validateEmail(email)){
+        logger.logLoginError({error:"Invalid Email", data:email})
+        return res.status(400).send({"error":"Invalid Email"});
+    }
+
+    if(!validator.validatePassword(password)){
+        logger.logLoginError({error:"Invalid Password", data:password})
+        return res.status(400).send({"error":"Invalid Password"});
+    }
+
+    /* 
+        Check if email exists in the database
+    */
+
+    database = new SupabaseDB();
+
+    let data = await database.query("users","email",`${email}`);
+
+    if(!data['success']){
+        logger.logLoginError({error:"Database Error", data:data['reason']})
+        return res.status(500).send({"error":data['reason']})
+    }
+
+    if(data['success']&&data['result'].length==0){
+        logger.logLoginError({error:"Non-Existing Email", data:email})
+        return res.status(400).send({"error":"email does not exist"})
+    }
+
+    /*
+        Get the user info and verify the password
+    */
+
+    const userInfo = data['result'][0];
+
+    const cryptography = new Cryptography();
+
+    const hash = userInfo['hash'];
+
+    if(!cryptography.verifyPassword(password,hash)){
+        logger.logLoginError({error:"Incorrect Password", data:email})
+        return res.status(400).send({"error":"incorrect password"})
+    }
+
+    
+    /*
+        Person Verified
+        Create JWT Token for the user
+    */
+
+
+    const salt = hash.split(':')[0];
+    const uid = userInfo['uid'];
+    const name = userInfo['name'];
+    const username = userInfo['username'];
+
+    const jsonWebToken = new JSON_WEB_TOKEN();
+    const userToken = jsonWebToken.createToken(jsonWebToken.createPayload(uid,name,username,email,salt));
+
+    console.log(`User with uid ${uid} logged in`)
+    
+    logger.logLogin({uid:uid,name:name,username:username,email:email});
+
+    return res
+    .cookie( 'userToken' , userToken ,{ httpOnly:true })
+    .setHeader('Content-Type', 'application/json')
+    .status(201)
+    .json({
+        success: "Login successful",
+        user: {
+            uid: uid,
+            name: name,
+            username: username,
+            email: email,
+        },
+        userToken: userToken
+    });
 
 })
 
