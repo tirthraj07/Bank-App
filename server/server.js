@@ -2,6 +2,7 @@ const http = require('http');
 const express = require('express');
 const app = express();
 const server = http.createServer(app);
+const cookieParser = require('cookie-parser')
 const cors = require('cors');
 const io = require('socket.io')(server,{
     cors:{
@@ -18,6 +19,9 @@ app.use(cors());
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cookieParser())
+
+const authenticationMiddleware = require('./middleware/auth');
 
 app.use('/auth/',auth_router);
 
@@ -25,7 +29,7 @@ io.on("connection",(socket)=>{
     console.log("Client Connected to the Server");
 })
 
-app.get('/api',(req,res)=>{
+app.get('/api',authenticationMiddleware,(req,res)=>{
     res.send({"Message":"Hello World"})
 })
 

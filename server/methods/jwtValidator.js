@@ -9,7 +9,7 @@ class JSON_WEB_TOKEN{
 
     createPayload(userId,name,username,email,iv){
         return {
-            userId: userId,
+            uid: userId,
             name: name,
             username: username,
             email: email,
