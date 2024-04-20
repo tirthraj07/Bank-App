@@ -6,6 +6,8 @@ const Validator = require('../methods/validator')
 const JSON_WEB_TOKEN = require('../methods/jwtValidator')
 const SupabaseDB = require('../methods/supabase')
 const Cryptography = require('../methods/cryptoAlgo')
+const Logger = require('../methods/logger')
+
 
 const CIPHER_KEY = "f8f1f5aac82f7d160906412074f3b8e5";
 
@@ -22,24 +24,29 @@ auth_router.post('/signup', async (req,res)=>{
     const validator = new Validator();
 
     console.log("New Signup Request: ",name,username,email,password);
+    const logger = new Logger()
 
     /* 
         Check if the username, password, email and name are valid entries using Regex
     */
 
     if(!validator.validateName(name)){
+        logger.logSignupError({error:"Invalid Name", data:name})
         return res.status(400).send({"error":"Invalid Name"});
     }
 
     if(!validator.validateUsername(username)){
+        logger.logSignupError({error:"Invalid Username", data:username})
         return res.status(400).send({"error":"Invalid Username"});
     }
 
     if(!validator.validateEmail(email)){
+        logger.logSignupError({error:"Invalid Email", data:email})
         return res.status(400).send({"error":"Invalid Email"});
     }
 
     if(!validator.validatePassword(password)){
+        logger.logSignupError({error:"Invalid Password", data:password})
         return res.status(400).send({"error":"Invalid Password"});
     }
 
@@ -54,10 +61,12 @@ auth_router.post('/signup', async (req,res)=>{
     //console.log("Result for username: ", data);
 
     if(!data['success']){
+        logger.logSignupError({error:"Database Error", data:data['reason']})
         return res.status(500).send({"error":data['reason']})
     }
 
     if(data['success']&&data['result'].length!=0){
+        logger.logSignupError({error:"Existing Username", data:username})
         return res.status(400).send({"error":"username already exists"})
     }
 
@@ -66,10 +75,12 @@ auth_router.post('/signup', async (req,res)=>{
     //console.log("Result for email: ", data);
 
     if(!data['success']){
+        logger.logSignupError({error:"Database Error", data:data['reason']})
         return res.status(500).send({"error":data['reason']})
     }
 
     if(data['success']&&data['result'].length!=0){
+        logger.logSignupError({error:"Existing Email", data:email})
         return res.status(400).send({"error":"email already exists"})
     }
 
@@ -139,13 +150,19 @@ auth_router.post('/signup', async (req,res)=>{
 
         Step 1: Create a Payload containing basic user information such as uid, name, username, email
         Step 2: Create a JWT Token by passing the payload
-        Step 3: Send the response and set 'userToken' containing JWT Token as cookie
     */
 
     const jsonWebToken = new JSON_WEB_TOKEN();
     const userToken = jsonWebToken.createToken(jsonWebToken.createPayload(uid,name,username,email));
 
     console.log(`User with uid ${uid} created`)
+
+    /*
+        Log the info into the log files
+    */
+
+    
+    logger.logSignup({uid:uid,name:name,username:username,email:email});
 
     return res
     .cookie( 'userToken' , userToken ,{ httpOnly:true })
