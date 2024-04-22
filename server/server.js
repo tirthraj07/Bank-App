@@ -6,7 +6,7 @@ const cookieParser = require('cookie-parser')
 const cors = require('cors');
 const io = require('socket.io')(server,{
     cors:{
-        origin: "https://example.com",
+        origin: "*",
         methods: ["GET", "POST","PUT","PATCH","DELETE"],
     }
 })
@@ -29,7 +29,7 @@ io.on("connection",(socket)=>{
     console.log("Client Connected to the Server");
 })
 
-app.get('/api',authenticationMiddleware,(req,res)=>{
+app.get('/api',(req,res)=>{
     res.send({"Message":"Hello World"})
 })
 
