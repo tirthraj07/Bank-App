@@ -1,3 +1,5 @@
+import NavBar from "@/components/navbar"
+
 export const metadata = {
   title: 'Bank App',
   description: 'Created by Tirthraj Mahajan',
@@ -10,7 +12,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <NavBar />
+
+        {children}
+        
+        </body>
     </html>
   )
 }

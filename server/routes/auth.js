@@ -165,7 +165,7 @@ auth_router.post('/signup', async (req,res)=>{
     logger.logSignup({uid:uid,name:name,username:username,email:email});
 
     return res
-    .header( 'userToken' , userToken ,{ httpOnly:true })
+    .cookie( 'userToken' , userToken ,{ httpOnly:true })
     .setHeader('Content-Type', 'application/json')
     .status(201)
     .json({
