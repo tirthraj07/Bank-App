@@ -25,6 +25,8 @@ const authenticationMiddleware = require('./middleware/auth');
 
 app.use('/auth/',auth_router);
 
+app.use('/api',authenticationMiddleware);
+
 io.on("connection",(socket)=>{
     console.log("Client Connected to the Server");
 })
