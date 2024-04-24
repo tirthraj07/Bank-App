@@ -106,6 +106,26 @@ winston.loggers.add('RouteLogger',{
 
 })
 
+winston.loggers.add('LogoutLogger',{
+    level:'info',
+    format: combine(
+        errors({stack:true}),
+        timestamp(),
+        json(),
+        prettyPrint()
+    ),
+    transports:[
+        new winston.transports.Console(),
+        new winston.transports.File({
+            filename: path.join(logDirectory,'logout.log'),
+            tailable: true,
+            maxsize: 5242880,
+        })
+    ],
+    defaultMeta: {service: 'LogoutService'}
+
+})
+
 class Logger{
     constructor(){
         this.signup_logger = winston.loggers.get('SignupLogger')
@@ -113,6 +133,7 @@ class Logger{
         this.login_logger = winston.loggers.get('LoginLogger')
         this.login_error_logger = winston.loggers.get('LoginErrorLogger')
         this.route_logger = winston.loggers.get('RouteLogger')
+        this.logout_logger = winston.loggers.get('LogoutLogger')
     }
 
     logSignup(userInfo){
@@ -136,6 +157,10 @@ class Logger{
     logRoute(routeInfo){
         // routeInfo contains the route and the user accessing the route
         this.route_logger.info('Route Access', routeInfo);
+    }
+
+    logLogout(logoutInfo){
+        this.logout_logger.info('Logout', logoutInfo);
     }
 }
 

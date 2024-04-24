@@ -201,6 +201,33 @@ auth_router.get('/verifyUserToken',(req,res)=>{
 
 })
 
+
+auth_router.post('/logout',async(req,res)=>{
+    try{
+        const userToken = req.body['userToken'];
+        const jwtValidator = new JSON_WEB_TOKEN();
+        const validation = jwtValidator.validateUserToken(userToken);
+        if(!validation.valid){
+            return res.status(400).send({success:false})
+        }
+
+        const logger = new Logger()
+        const decodedToken = validation.decodedToken
+        
+        const name = decodedToken.name;
+        const username = decodedToken.username;
+        const email = decodedToken.email;
+        const uid = decodedToken.uid;
+
+        logger.logLogout({uid:uid, username:username, email:email, name:name})
+
+        return res.status(200).send({success:true})
+    }
+    catch(e){
+        return res.status(500).send({success:false})
+    }
+})
+
 auth_router.post('/login',async (req,res)=>{
     /* 
         Fetch the user info from the body
