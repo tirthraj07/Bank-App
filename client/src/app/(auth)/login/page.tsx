@@ -1,8 +1,11 @@
 "use client"
 import SignupComponent from "@/components/signup";
-import { useEffect, useState } from "react"
+import LoginComponent from "@/components/login"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation";
 
 export default function LoginPage(){
+    const router = useRouter()
     const [page,setPage] = useState('signup');
     
     function signUpPage(){
@@ -11,6 +14,18 @@ export default function LoginPage(){
     function loginPage(){
         setPage('login');
     }
+
+    useEffect(()=>{
+        async function checkLoginStatus(){
+            const res = await fetch('/api/isLoggedIn',{method:'GET'})
+            const data = await res.json()
+            if(data['status']){
+                router.push('/logout')
+            }
+        }
+
+        checkLoginStatus();
+    },[])
 
     return (
 
@@ -22,8 +37,7 @@ export default function LoginPage(){
                 </>
                 :
                 <>
-                    Login Page
-                    <button onClick={signUpPage} >Signup?</button>
+                    <LoginComponent signUpPage={signUpPage}/>
                 </>            
             }
         

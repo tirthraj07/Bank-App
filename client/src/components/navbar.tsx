@@ -2,12 +2,18 @@
 import { useEffect } from 'react';
 import Link from 'next/link'
 import Image from 'next/image'
+import { usePathname } from "next/navigation"
+
 
 export default function NavBar(){
     useEffect(()=>{
         require('bootstrap/dist/css/bootstrap.min.css')
         require('bootstrap/dist/js/bootstrap.bundle.min.js')
     },[])
+
+    const pathname = usePathname()
+    const isLoggedIn = !pathname.startsWith('/login')
+
     return (
         <>
             <nav className="navbar navbar-expand-lg bg-light p-2" style={{display: "grid", gridTemplateColumns: "1fr 1fr"}}>
@@ -28,26 +34,33 @@ export default function NavBar(){
                         <span className="navbar-toggler-icon"></span>
                     </button>
                 </div>
-                <div className="collapse navbar-collapse" id="navbarNav" style={{justifyContent: "end", fontSize: "1.3rem"}}>
-                    <ul className="navbar-nav">
-                    <li className="nav-item">
-                        <Link className="nav-link active" style={{display: "inline-block"}} aria-current="page" href="/">
-                            Home
-                        </Link>
-                    </li>
-                    <li className="nav-item">
-                        <Link className="nav-link" style={{display: "inline-block"}} href="/chat">
-                            Chat
-                        </Link>
-                    </li>
-                    <li className="nav-item">
-                        <Link className="nav-link" style={{display: "inline-block"}} href="/logout">
-                            Logout
-                        </Link>
-                    </li>
-                    </ul>
-                </div>
-            </nav>
+                {
+                    isLoggedIn?
+                    <>
+                        <div className="collapse navbar-collapse" id="navbarNav" style={{justifyContent: "end", fontSize: "1.3rem"}}>
+                            <ul className="navbar-nav">
+                            <li className="nav-item">
+                                <Link className="nav-link active" style={{display: "inline-block"}} aria-current="page" href="/">
+                                    Home
+                                </Link>
+                            </li>
+                            <li className="nav-item">
+                                <Link className="nav-link" style={{display: "inline-block"}} href="/chat">
+                                    Chat
+                                </Link>
+                            </li>
+                            <li className="nav-item">
+                                <Link className="nav-link" style={{display: "inline-block"}} href="/logout">
+                                    Logout
+                                </Link>
+                            </li>
+                            </ul>
+                        </div>
+                    </>
+                    :
+                    <></>
+                }
+                </nav>
         
         </>
     )

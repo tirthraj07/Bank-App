@@ -1,6 +1,5 @@
 "use client"
 import { useEffect, useState } from 'react';
-import { useCookies } from 'next-client-cookies';
 import { useRouter } from 'next/navigation'
 
 const BACKEND_URL = 'http://127.0.0.1:3005'
@@ -9,7 +8,6 @@ const BACKEND_URL = 'http://127.0.0.1:3005'
 export default function SignupComponent({loginPage}:{
     loginPage: () => void;
 }){ 
-    const cookies = useCookies();
     const router = useRouter()
     useEffect(()=>{
         require('bootstrap/dist/css/bootstrap.min.css')
@@ -26,8 +24,13 @@ export default function SignupComponent({loginPage}:{
     });
 
     const handleError = (err: Error) => {
-        alert(err.message);
-        console.log(err.message);
+        const errors: string[] = [];
+        
+        let errMessage = err.message.split(' ').map((str)=> str.charAt(0).toUpperCase() + str.slice(1)).join(' ');
+
+        errors.push(`Error : ${errMessage}`);
+        setValidationErrors(errors);
+        // console.log(err.message);
     }
 
 
@@ -38,7 +41,7 @@ export default function SignupComponent({loginPage}:{
     async function signUpRequest(formData: { name: string; email: string; username: string; password: string; }) {
         try{
         
-            const response = await fetch(`${BACKEND_URL}/auth/signup`,{
+            const response = await fetch(`/api/signup`,{
                 method: 'POST',
                 headers: {
                     "Content-Type": "application/json",
@@ -46,15 +49,11 @@ export default function SignupComponent({loginPage}:{
                 body: JSON.stringify(formData),
             })
 
-            
-
             const data = await response.json()
 
             if(data['error']) throw new Error(data['error'])
             
-            cookies.set('userToken',data['userToken'])
-            
-            console.log(data);
+            alert("Signup Successful!");
             
             router.push('/');
         }
@@ -68,7 +67,7 @@ export default function SignupComponent({loginPage}:{
         e.preventDefault();
         const errors: string[] = validateForm(formData);
         if (errors.length === 0) {
-            console.log(formData);
+            //console.log(formData);
             await signUpRequest(formData);
             
         } else {
