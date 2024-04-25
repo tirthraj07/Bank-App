@@ -4,6 +4,7 @@ const app = express();
 const server = http.createServer(app);
 const cookieParser = require('cookie-parser')
 const cors = require('cors');
+const path = require('path')
 const io = require('socket.io')(server,{
     cors:{
         origin: "*",
@@ -11,11 +12,14 @@ const io = require('socket.io')(server,{
     }
 })
 const auth_router = require('./routes/auth') 
+const api_router = require('./routes/api')
 app.use(cors());
 
-    const HOSTNAME = '127.0.0.1';
-    const PORT = 3005;
-    const SECRET_KEY = 'vgvsvTGusrlx2jdZi7oVVDQBtTjlOO6j';
+const HOSTNAME = '127.0.0.1';
+const PORT = 3005;
+const SECRET_KEY = 'vgvsvTGusrlx2jdZi7oVVDQBtTjlOO6j';
+
+
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -25,15 +29,15 @@ const authenticationMiddleware = require('./middleware/auth');
 
 app.use('/auth/',auth_router);
 
-app.use('/api',authenticationMiddleware);
+app.use('/api',[authenticationMiddleware],api_router);
 
 io.on("connection",(socket)=>{
     console.log("Client Connected to the Server");
 })
 
-app.get('/api',(req,res)=>{
-    res.send({"Message":"Hello World"})
-})
+// app.get('/api',(req,res)=>{
+//     res.send({"Message":"Hello World"})
+// })
 
 server.listen(PORT,()=>{
     console.log(`Server listening at http://${HOSTNAME}:${PORT}`)
