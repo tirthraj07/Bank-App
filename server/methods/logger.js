@@ -95,7 +95,7 @@ winston.loggers.add('RouteLogger',{
         prettyPrint()
     ),
     transports:[
-        new winston.transports.Console(),
+        // new winston.transports.Console(),
         new winston.transports.File({
             filename: path.join(logDirectory,'route_logs.log'),
             tailable: true,

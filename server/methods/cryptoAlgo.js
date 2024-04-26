@@ -38,8 +38,24 @@ class Cryptography{
         return encryptedMessage;
     }
 
+    encipherImage(message,key,iv){
+        const cipher = createCipheriv('aes-256-cbc', key, iv);
+        let encryptedMessage = cipher.update(message, 'binary', 'hex');
+        encryptedMessage += cipher.final('hex');
+        return encryptedMessage;
+    }
+
+    decipherImage(encryptedMessage, key, iv) {
+        const decipher = createDecipheriv('aes-256-cbc', key, iv);
+        decipher.setAutoPadding(false)
+        let decryptedMessage = decipher.update(encryptedMessage, 'hex', 'binary');
+        decryptedMessage += decipher.final('binary');
+        return decryptedMessage;
+    }
+
     decipher(ciphertext, key, iv){
         const decipher = createDecipheriv('aes-256-cbc', key, iv)
+        decipher.setAutoPadding(false)
         const message = decipher.update(ciphertext,'hex','utf-8') + decipher.final('utf-8');
         return message;
     }
@@ -73,7 +89,7 @@ class Cryptography{
     decryptUsingPrivateKey(encryptedMessage, privateKey){
         const decryptedMessage = privateDecrypt(
             privateKey,
-            Buffer.from(encryptedMessage)
+            Buffer.from(encryptedMessage, 'hex')
         ).toString('utf-8');
         return decryptedMessage;
     }
