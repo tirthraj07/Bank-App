@@ -61,8 +61,11 @@ class Cryptography{
 
     encryptUsingPublicKey(message, publicKey){
         const encryptedMessage = publicEncrypt(
-            publicKey,
-            Buffer.from(message)
+            {
+                key: publicKey
+            },
+            Buffer.from(message),
+
         ).toString('hex');
         return encryptedMessage;
     }
