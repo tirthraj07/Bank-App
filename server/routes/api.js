@@ -7,6 +7,7 @@ const Cryptography = require('../methods/cryptoAlgo')
 const { unlinkSync, readFileSync, writeFileSync } = require('node:fs');
 const { randomBytes } = require('crypto')
 const path = require('path')
+const { createCipheriv, createDecipheriv } = require('crypto');
 
 const CIPHER_KEY = "f8f1f5aac82f7d160906412074f3b8e5";
 
@@ -37,17 +38,10 @@ async function getPublicKey(decodedToken){
 }
 
 function encipherFile(fileContent,salt){
-    const cryptography = new Cryptography()
     const cipher_key = randomBytes(32).toString('hex')
-
-    const encipheredFileContent = cryptography.encipherImage(fileContent,Buffer.from(cipher_key, 'hex'),salt)
-    // console.log("Original File Content ",fileContent)
-    // console.log("Hex File Content ",Buffer.from(fileContent,'hex'))
-    // console.log("Hex Cipher Key ",cipher_key)
-    // console.log("Buffer Cipher Key ",Buffer.from(cipher_key,'hex'))
-    // console.log("Salt ",salt)
-    console.log("Enciphered File Content ",encipheredFileContent)
-
+    const cipher = createCipheriv('aes-256-cbc', Buffer.from(cipher_key, 'hex'), salt);
+    let encipheredFileContent = cipher.update(fileContent);
+    encipheredFileContent = Buffer.concat([encipheredFileContent, cipher.final()]);
     return {content: encipheredFileContent, key:cipher_key}
 }
 
@@ -62,7 +56,6 @@ async function encryptFile(file, decodedToken){
         const {content:encipheredFileContent, key:fileKey} = encipherFile(fileContent, salt)
         let encryptedFileKey = cryptography.encryptUsingPublicKey(fileKey,public_key)
         writeFileSync(file.path,encipheredFileContent)
-        readFileSync("Reading File", file.path)
         return {status:true, key:encryptedFileKey}
     }
     catch(err){
@@ -140,17 +133,10 @@ function getDecryptedFileKey(encryptedFileKey,private_key){
 }
 
 function getDecryptedFileContent(encryptedContent, fileKey, salt){
-    const cryptoAlgo = new Cryptography()
-    console.log("Encrypted Content ",encryptedContent)
-    console.log("Hex File Key ",fileKey)
-    console.log("Buffer File Key ", Buffer.from(fileKey,'hex'))
-    console.log("Salt ",salt);
-    const decipheredFileContent = cryptoAlgo.decipherImage(encryptedContent, Buffer.from(fileKey,'hex'), salt)
-
-    console.log("Deciphered File Content", decipheredFileContent)
-    // console.log("Buffer File Content ",Buffer.from(decipheredFileContent,'hex'))
-
-    return Buffer.from(decipheredFileContent,'hex')
+    const decipher = createDecipheriv('aes-256-cbc', Buffer.from(fileKey,'hex'), salt);
+    let decrypted = decipher.update(encryptedContent);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted
 }
 
 function getDecryptedPrivateKey(encryptedPrivateKey, salt){
@@ -221,19 +207,25 @@ api_router.get('/file/:fileID',async (req,res)=>{
 
     const absolute_path = path.resolve(__dirname,`../${file_path}`)
 
-    res.status(200).sendFile(absolute_path)
+    res.status(200).sendFile(absolute_path, async(err)=>{
+        if(err){
+            console.log('Error sending file:', err)
+            return;
+        }
+        try{
+            writeFileSync(file_path,encryptedContent)
+        }
+        catch(error){
+            console.log("Error Occurred during re-encryption")
+            console.log(error.message)
+        }
+    
+    })
 
-    // Re-encrypt the data
+//    Re-encrypt the data
 
 
-    // try{
-    //     writeFileSync(file_path,encryptedContent)
-    // }
-    // catch(error){
-    //     console.log("Error Occurred during re-encryption")
-    //     console.log(error.message)
-    // }
-
+    
 })
 
 module.exports = api_router
