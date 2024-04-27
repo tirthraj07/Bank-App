@@ -227,4 +227,25 @@ api_router.get('/file/:fileID',async (req,res)=>{
     
 })
 
+api_router.get('/getDocs',async (req,res)=>{
+    const userToken = req.cookies.userToken
+    if(!userToken) return res.status(400).send({error:"Missing UserToken"})
+    const jwt = new JSON_WEB_TOKEN()
+    const Token = jwt.validateUserToken(userToken)
+    if(!Token.valid) return res.status(401).send({error:"Invalid Token"})
+    const decodedToken = Token.decodedToken;
+    const { uid:user_id } = decodedToken
+    const database = new SupabaseDB()
+    const getDocsFromDB = await database.query('file_uploads','user_id',user_id)
+    if(!getDocsFromDB.success) return res.status(500).send({error:getDocsFromDB.reason})
+    
+    const responseData = []
+
+    getDocsFromDB.result.forEach((file, it)=>{
+        responseData.push({index:it,uid:file.uid,doctype:file.doctype,filename:file.filename,created_at:file.created_at})
+    })
+
+    return res.status(200).send(responseData);
+})
+
 module.exports = api_router
