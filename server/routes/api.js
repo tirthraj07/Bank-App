@@ -19,8 +19,8 @@ function removeFile(filepath){
     try {
         unlinkSync(filepath);
     } catch (err) {
-        console.log('Unable to delete file')
-        console.log(err.message)
+        console.error('Unable to delete file')
+        console.error(err.message)
     }
 }
 
@@ -59,7 +59,7 @@ async function encryptFile(file, decodedToken){
         return {status:true, key:encryptedFileKey}
     }
     catch(err){
-        console.log(err.message);
+        console.error(err.message);
         return {status:false, reason:err.message}
     }
 }
@@ -119,7 +119,7 @@ api_router.post('/file_upload',upload.single('file'),async (req,res)=>{
         return res.status(200).send({"status":"success", file: req.file})
     }   
     catch(err){
-        console.log(err);
+        console.error(err);
         removeFile(req.file.path);
         return res.status(500).send({"error":err.message})
     }
@@ -184,10 +184,10 @@ api_router.get('/file/:fileID',async (req,res)=>{
         
         encryptedContent = readFileSync(file_path);
 
-        console.log("Encrypted Content ", readFileSync(file_path))
+        // console.log("Encrypted Content ", readFileSync(file_path))
 
     }catch(error){
-        console.log(error.message)
+        console.error(error.message)
         return res.status(500).send({error:error.message})
     }
     
@@ -200,7 +200,7 @@ api_router.get('/file/:fileID',async (req,res)=>{
         writeFileSync(file_path,decryptedFileContent)
     }
     catch(error){
-        console.log(error.message)
+        console.error(error.message)
         return res.status(500).send({error:error.message})
     }
 
@@ -209,20 +209,19 @@ api_router.get('/file/:fileID',async (req,res)=>{
 
     res.status(200).sendFile(absolute_path, async(err)=>{
         if(err){
-            console.log('Error sending file:', err)
-            return;
+            console.error('Error sending file:', err)
         }
+        //    Re-encrypt the data
         try{
             writeFileSync(file_path,encryptedContent)
         }
         catch(error){
-            console.log("Error Occurred during re-encryption")
-            console.log(error.message)
+            console.error("Error Occurred during re-encryption")
+            console.error(error.message)
         }
     
     })
 
-//    Re-encrypt the data
 
 
     

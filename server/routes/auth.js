@@ -23,7 +23,7 @@ auth_router.post('/signup', async (req,res)=>{
     const password = req.body['password'];
     const validator = new Validator();
 
-    console.log("New Signup Request: ",name,username,email,password);
+    // console.log("New Signup Request: ",name,username,email,password);
     const logger = new Logger()
 
     /* 
@@ -134,7 +134,7 @@ auth_router.post('/signup', async (req,res)=>{
     }
 
     const storeResult = await database.insert('users',userInfo);
-    console.log(storeResult)
+    // console.log(storeResult)
     if(!storeResult['success']){
         return res.status(500).send({"error":storeResult['reason']})
     }
@@ -142,6 +142,22 @@ auth_router.post('/signup', async (req,res)=>{
     let uid = await database.query('users','username',username);
     
     uid = uid['result'][0]['uid'];
+
+    const role = 'customer'     // Default Customer Auth for signup
+
+    const getEmployeeIdFromDB = await database.query('user_roles','role',role)
+
+    if(!getEmployeeIdFromDB['success']){
+        return res.status(500).send({"error":getEmployeeIdFromDB['reason']})
+    }
+
+    const id = getEmployeeIdFromDB['result'][0]['id']
+
+    const initUserRole = await database.insert('roles',{user_id:uid,role_id:id})
+
+    if(!initUserRole['success']){
+        return res.status(500).send({"error":initUserRole['reason']})
+    }
 
     //console.log(uid);
 
@@ -153,16 +169,16 @@ auth_router.post('/signup', async (req,res)=>{
     */
 
     const jsonWebToken = new JSON_WEB_TOKEN();
-    const userToken = jsonWebToken.createToken(jsonWebToken.createPayload(uid,name,username,email,salt));
+    const userToken = jsonWebToken.createToken(jsonWebToken.createPayload(uid,name,username,email,salt,role));
 
-    console.log(`User with uid ${uid} created`)
+    // console.log(`User with uid ${uid} created`)
 
     /*
         Log the info into the log files
     */
 
     
-    logger.logSignup({uid:uid,name:name,username:username,email:email});
+    logger.logSignup({uid:uid,name:name,username:username,email:email,role:role});
 
     return res
     .cookie( 'userToken' , userToken ,{ httpOnly:true })
@@ -175,6 +191,7 @@ auth_router.post('/signup', async (req,res)=>{
             name: name,
             username: username,
             email: email,
+            role:role
         },
         userToken: userToken
     });
@@ -236,7 +253,7 @@ auth_router.post('/login',async (req,res)=>{
     const password = req.body['password'];
     const validator = new Validator();
 
-    console.log("New Login Request: ",email,password);
+    // console.log("New Login Request: ",email,password);
     const logger = new Logger()
     /* 
         Check if the username, password, email and name are valid entries using Regex
@@ -297,12 +314,28 @@ auth_router.post('/login',async (req,res)=>{
     const name = userInfo['name'];
     const username = userInfo['username'];
 
-    const jsonWebToken = new JSON_WEB_TOKEN();
-    const userToken = jsonWebToken.createToken(jsonWebToken.createPayload(uid,name,username,email,salt));
+    const getUserRoleFromDB = await database.query('roles','user_id',uid)
 
-    console.log(`User with uid ${uid} logged in`)
+    if(!getUserRoleFromDB['success']){
+        return res.status(500).send({"error":getUserRoleFromDB['reason']})
+    }
+
+    const roleID = getUserRoleFromDB['result'][0]['role_id'];
+
+    const getRoleNameFromDB = await database.query('user_roles','id',roleID)
+
+    if(!getRoleNameFromDB['success']){
+        return res.status(500).send({"error":getRoleNameFromDB['reason']})
+    }
+
+    const role = getRoleNameFromDB['result'][0]['role']
+
+    const jsonWebToken = new JSON_WEB_TOKEN();
+    const userToken = jsonWebToken.createToken(jsonWebToken.createPayload(uid,name,username,email,salt,role));
+
+    // console.log(`User with uid ${uid} logged in`)
     
-    logger.logLogin({uid:uid,name:name,username:username,email:email});
+    logger.logLogin({uid:uid,name:name,username:username,email:email,role:role});
 
     return res
     .cookie( 'userToken' , userToken ,{ httpOnly:true })
@@ -315,6 +348,7 @@ auth_router.post('/login',async (req,res)=>{
             name: name,
             username: username,
             email: email,
+            role: role,
         },
         userToken: userToken
     });
