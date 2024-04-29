@@ -8,12 +8,16 @@ const { unlinkSync, readFileSync, writeFileSync } = require('node:fs');
 const { randomBytes } = require('crypto')
 const path = require('path')
 const { createCipheriv, createDecipheriv } = require('crypto');
-
+const forum_router = require('./forum/forum')
 const CIPHER_KEY = "f8f1f5aac82f7d160906412074f3b8e5";
+
+api_router.use('/forum',forum_router);
 
 api_router.get('/',(req,res)=>{
     res.status(200).send('Hello World');
 })
+
+
 
 function removeFile(filepath){
     try {
