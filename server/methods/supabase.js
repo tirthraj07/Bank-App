@@ -44,6 +44,22 @@ class SupabaseDB{
         }
     }
 
+    async insertWithResponse(table,insertObject){
+        try{
+            const { data, error } = await this.supabase
+            .from(table)
+            .insert(insertObject)
+            .select();
+
+            if(error) throw new Error(error.message)
+
+            return {success: true, statusText:"Created", status:201, data:data[0]}
+        }
+        catch(error){
+            return {success: false, reason: error.message}
+        }
+    }
+
 }
 
 module.exports = SupabaseDB

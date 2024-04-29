@@ -145,7 +145,7 @@ auth_router.post('/signup', async (req,res)=>{
 
     const role = 'customer'     // Default Customer Auth for signup
 
-    const getEmployeeIdFromDB = await database.query('user_roles','role',role)
+    const getEmployeeIdFromDB = await database.query('roles','role',role)
 
     if(!getEmployeeIdFromDB['success']){
         return res.status(500).send({"error":getEmployeeIdFromDB['reason']})
@@ -153,7 +153,7 @@ auth_router.post('/signup', async (req,res)=>{
 
     const id = getEmployeeIdFromDB['result'][0]['id']
 
-    const initUserRole = await database.insert('roles',{user_id:uid,role_id:id})
+    const initUserRole = await database.insert('user_roles',{user_id:uid,role_id:id})
 
     if(!initUserRole['success']){
         return res.status(500).send({"error":initUserRole['reason']})
@@ -314,7 +314,7 @@ auth_router.post('/login',async (req,res)=>{
     const name = userInfo['name'];
     const username = userInfo['username'];
 
-    const getUserRoleFromDB = await database.query('roles','user_id',uid)
+    const getUserRoleFromDB = await database.query('user_roles','user_id',uid)
 
     if(!getUserRoleFromDB['success']){
         return res.status(500).send({"error":getUserRoleFromDB['reason']})
@@ -322,7 +322,7 @@ auth_router.post('/login',async (req,res)=>{
 
     const roleID = getUserRoleFromDB['result'][0]['role_id'];
 
-    const getRoleNameFromDB = await database.query('user_roles','id',roleID)
+    const getRoleNameFromDB = await database.query('roles','id',roleID)
 
     if(!getRoleNameFromDB['success']){
         return res.status(500).send({"error":getRoleNameFromDB['reason']})

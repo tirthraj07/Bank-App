@@ -3,27 +3,12 @@ const express = require('express')
 const { spawn } = require('child_process');
 const path = require('path')
 const forum_router = express.Router();
+const SupabaseDB = require('../../methods/supabase')
+const callModel = require('../../methods/pythonScript')
 
-function callModel(description) {
-    return new Promise((resolve, reject) => {
-        const modelPath = path.resolve(__dirname, "../../scripts/model.py");
-        let output = '';
+const urgencyModelPy = 'urgencyModel.py'
+const summaryModelPy = 'summaryModel.py'
 
-        const pythonProcess = spawn('python', [modelPath,description]);
-
-        pythonProcess.stdout.on('data', (data) => {
-            output += data.toString();
-        });
-
-        pythonProcess.on('close', (code) => {
-            if (code === 0) {
-                resolve({ success: true, output: output });
-            } else {
-                reject({ success: false, reason: 'Internal Server Error' });
-            }
-        });
-    });
-}
 
 forum_router.post('/upload', async (req, res)=>{
     
@@ -43,28 +28,54 @@ forum_router.post('/upload', async (req, res)=>{
     
     if(!title , !description , !type ) return res.status(400).send({error: "Missing title or description or type"});
 
-    let priority = 0;
+    // Find Priority
 
-    try{
-        const modelOutput = await callModel(description);
-        if(!modelOutput.success) throw new Error(modelOutput.reason);
-        priority = parseFloat(modelOutput.output.trim())
-    }   
-    catch(e){
-        console.error(e.message)
-        return res.send(500).send({error:e.message})
-    }
+    let urgency = -1;
+
+    
+    const urgencyModelOutput = await callModel(urgencyModelPy,[title,description])
+    if(!urgencyModelOutput.success) return res.status(500).send({error:urgencyModelOutput.reason})
+    urgency = parseFloat(urgencyModelOutput.output);
+    
+    if(urgency === -1) return res.status(500).send({error:"Urgency model could't predict"})
+
+    // Find Summary
+
+    let summary = ""
+
+    const summaryModelOutput = await callModel(summaryModelPy,[title,description])
+    if(!summaryModelOutput.success) return res.send(500).send({error:summaryModelOutput.reason})
+    summary = summaryModelOutput.output;
+
+    if(summary==="") return res.status(500).send({error:"Summary Model could't summarize"})
+
+    // Find type_id
+    const database = new SupabaseDB()
+    const queryTypeID = await database.query('complaints','type',type);
+    if(!queryTypeID.success) return res.status(500).send({error: queryTypeID.reason})
+    const { id:type_id } = queryTypeID.result[0]
+    if(!type_id) return res.status(500).send({error:"Type undefined"});
 
     const payload = {
-        user_id:user_id,
+        type_id:type_id,
         title: title,
         description: description,
-        type: type,
-        priority: priority
+        user_id: user_id,
+        resolved: false,
+        urgency: urgency,
+        summary:summary
     }
+    
 
-    return res.status(200).send(payload)
+    const insertPayloadInDB = await database.insertWithResponse('user_complaints',payload);
+    
+    if(!insertPayloadInDB.success) return res.status(500).send({error: insertPayloadInDB.reason})
 
+    const { complaint_id, created_at } = insertPayloadInDB.data;
+
+    const responsePayload = {complaint_id:complaint_id, created_at:created_at, ...payload}    
+
+    return res.status(201).send({success:"Post Added Successfully", post:responsePayload})
 
 })
 
