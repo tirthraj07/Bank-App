@@ -5,12 +5,8 @@ const server = http.createServer(app);
 const cookieParser = require('cookie-parser')
 const cors = require('cors');
 const path = require('path')
-const io = require('socket.io')(server,{
-    cors:{
-        origin: "*",
-        methods: ["GET", "POST","PUT","PATCH","DELETE"],
-    }
-})
+const initializeSocket = require('./websockets/socketHandler')
+
 const auth_router = require('./routes/auth') 
 const api_router = require('./routes/api')
 app.use(cors());
@@ -31,9 +27,7 @@ app.use('/auth/',auth_router);
 
 app.use('/api',[authenticationMiddleware],api_router);
 
-io.on("connection",(socket)=>{
-    console.log("Client Connected to the Server");
-})
+initializeSocket(server);initializeSocket
 
 // app.get('/api',(req,res)=>{
 //     res.send({"Message":"Hello World"})
