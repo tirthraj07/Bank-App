@@ -37,6 +37,27 @@ function initializeSocket(server){
         
         console.log(`User ID ${userId} connected to the server`)
 
+        socket.on("joinRoom", (chatRoom) => {
+            if(!Buffer.isBuffer(chatRoom)){
+                console.log("Payload 'chatRoom' sent through the socket connection was not a buffer")
+                socket.disconnect(true);
+                return;
+            }
+            socket.join(chatRoom);
+            console.log(`Client joined room ${chatRoom}`);
+        });
+
+
+        socket.on("leaveRoom", (chatRoom) => {
+            if(!Buffer.isBuffer(chatRoom)){
+                console.log("Payload 'chatRoom' sent through the socket connection was not a buffer")
+                socket.disconnect(true);
+                return;
+            }
+            socket.leave(chatRoom);
+            console.log(`Client left room ${chatRoom}`);
+        });
+
         /*
         Note: Insufficient validation when decoding a Socket.IO packet
         Due to improper type validation in the socket.io-parser library (which is used by the socket.io and socket.io-client packages to encode and decode Socket.IO packets), it is possible to overwrite the _placeholder object which allows an attacker to place references to functions at arbitrary places in the resulting query object.
@@ -45,7 +66,7 @@ function initializeSocket(server){
         You need to make sure that the payload that you received from the client is actually a Buffer object
         
         */
-
+        
 
         socket.on('sendMessage', ({ message, chatRoom }) => {
             if(!Buffer.isBuffer(message) || !Buffer.isBuffer(chatRoom)){

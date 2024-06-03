@@ -11,6 +11,10 @@ function encryptMessage(message, iv){
     return crypto.encipher(message, Buffer.from(CIPHER_KEY), iv)
 }
 
+function decryptMessage(message, iv){
+    return crypto.decipher(message, Buffer.from(CIPHER_KEY), iv)
+}
+
 async function getSalt(user_id){
     const queryResult = await db.query('users','uid',user_id);
     if(!queryResult.success) return {success:false, error:queryResult.reason}
@@ -23,7 +27,7 @@ class Chats {
 
     async validateChatroom(chat_id){
         if(!chat_id){
-            return {valid: false};
+            return {valid: false, reason: "Missing chat_id" };
         }
 
         const queryChatroomResult = await db.query('chat_rooms','chat_id',chat_id);
@@ -41,23 +45,18 @@ class Chats {
         if(!queryUserChatRoomTable.success){
             return {valid: false, reason: queryUserChatRoomTable.reason}
         }
+        const isAssociated = queryUserChatRoomTable.result.some(({ chat_id: user_chat_id }) => user_chat_id === chat_id);
+        if (isAssociated) {
+            return { valid: true };
+        }
 
-        const results = queryUserChatRoomTable.result;
-
-        results.forEach(({chat_id:user_chat_id})=>{
-            if(user_chat_id===chat_id){
-                return {valid: true}
-            }
-        })
-
-        return {valid:false, reason: "Could not find chat_id associated with user_id"}
-
+        return { valid: false, reason: "User not associated with chat_id" };
     }
 
     async storeMessages(message, chat_id, sender_id, iv){
-        const authorize = await validateUserAssociationWithChatroom(sender_id, chat_id)
+        const authorize = await this.validateUserAssociationWithChatroom(sender_id, chat_id)
         if(!authorize.valid){
-            return {success: false, reason: authorize.reason}
+            return {success: false, error: authorize.reason}
         }
 
         const encryptedMessage = encryptMessage(message, iv);
@@ -65,7 +64,8 @@ class Chats {
         const jsonPayload = {
             chat_id: chat_id,
             sender_id: sender_id,
-            message: encryptedMessage
+            message: encryptedMessage,
+            iv: iv
         }
         const insertMessageInDB = await db.insert('chat_messages',jsonPayload)
         if(!insertMessageInDB.success){
@@ -77,19 +77,42 @@ class Chats {
     }
 
     async chatHistory(chat_id){
-        const validateChatroomQuery = await validateChatroom(chat_id)
+        const validateChatroomQuery = await this.validateChatroom(chat_id)
         if(!validateChatroomQuery.valid){
             return {success: false, reason: "Error occurred while validating the chat_id"}
         }
 
         try{
+
             // TODO: Retrieve the messages and sender id and then decrypt the messages
+            const chatHistoryResponse = await db.query('chat_messages', 'chat_id', chat_id)
+            if(!chatHistoryResponse.success){
+                return {success: false, reason: chatHistoryResponse.reason};
+            }
+
+            const chatHistoryMap = chatHistoryResponse.result.map((data)=>{
+                const decryptedMessage = decryptMessage(data.message, data.iv);
+                return {message: decryptedMessage, ...data};
+            }) 
+
+            return {success: true, result: chatHistoryMap};
         }
         catch(e){
             console.log(e.message)
         }
 
 
+    }
+
+    async createRoom(name){
+        if(name==""|typeof(name)!= 'string'){
+            return {success: false, reason: "Empty Name | Type of name not string"};
+        }
+        const createNewChatRoom = await db.insertWithResponse('chat_rooms',{name:name});
+        if(!createNewChatRoom.success){
+            return {success: false, reason: createNewChatRoom.reason};
+        }
+        return {success: true, data: createNewChatRoom.data};
     }
     
 
