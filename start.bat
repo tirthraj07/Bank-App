@@ -1,4 +1,4 @@
-@echo off
+@echo 
 
 rem Navigate to the server directory and start the server
 cd /d "C:\Users\LENOVO\Desktop\New folder\server"
